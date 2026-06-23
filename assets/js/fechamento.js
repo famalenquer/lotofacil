@@ -73,6 +73,9 @@ function renderResultados(data) {
     const econ = parseFloat(data.economia_reais).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     document.getElementById('economiaJogos').innerText = `R$ ${econ}`;
     
+    // Salva globalmente para exportação
+    window.lastGeneratedGames = data.jogos;
+    
     // Render Volantes
     const grid = document.getElementById('volanteGrid');
     grid.innerHTML = '';
@@ -105,4 +108,31 @@ function hideLoader() {
     const loader = document.getElementById('loader');
     loader.style.opacity = '0';
     setTimeout(() => { loader.style.display = 'none'; }, 500);
+}
+
+function exportarTXT() {
+    if (!window.lastGeneratedGames || window.lastGeneratedGames.length === 0) {
+        alert("Nenhum jogo gerado para exportar!");
+        return;
+    }
+    
+    let txtContent = "Lotofácil Pro Analytics - Fechamento Matemático\n";
+    txtContent += "==============================================\n\n";
+    
+    window.lastGeneratedGames.forEach((jogo, index) => {
+        const linha = jogo.map(n => n.toString().padStart(2, '0')).join(" ");
+        txtContent += `Jogo ${String(index + 1).padStart(2, '0')}: ${linha}\n`;
+    });
+    
+    const blob = new Blob([txtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Fechamento_Lotofacil_${window.lastGeneratedGames.length}_jogos.txt`;
+    document.body.appendChild(a);
+    a.click();
+    
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }

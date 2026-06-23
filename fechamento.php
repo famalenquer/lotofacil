@@ -84,7 +84,10 @@
                 </div>
             </div>
             
-            <h3 style="color: var(--text-main); margin-bottom: 10px;">📋 Volantes para preencher na lotérica:</h3>
+            <h3 style="color: var(--text-main); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                📋 Volantes para preencher na lotérica:
+                <button class="btn" onclick="exportarTXT()" style="background: var(--secondary); font-size: 0.9rem; padding: 8px 15px; width: auto;">⬇️ Baixar .TXT</button>
+            </h3>
             <div class="volante-grid" id="volanteGrid">
                 <!-- Jogos gerados via JS -->
             </div>

@@ -106,8 +106,18 @@
                 <div class="menu-title">Atualizar Base de Dados</div>
                 <div class="menu-desc">Faça o upload do arquivo oficial XLSX da Caixa para processar novos sorteios.</div>
             </a>
+            <a href="cluster.php" class="menu-card">
+                <div class="menu-icon">🌦️</div>
+                <div class="menu-title">Clima da Loteria</div>
+                <div class="menu-desc">IA (K-Means) que agrupa os sorteios em fases e identifica o regime comportamental atual.</div>
+            </a>
+            
+            <a href="records.php" class="menu-card">
+                <div class="menu-icon">📜</div>
+                <div class="menu-title">Verdades Históricas</div>
+                <div class="menu-desc">O livro dos recordes da Lotofácil. Maiores atrasos, sequências absurdas e dezenas campeãs.</div>
+            </a>
         </div>
     </div>
-
 </body>
 </html>
