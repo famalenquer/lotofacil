@@ -1,0 +1,21 @@
+# Arquivos do WAMP/Windows
+Thumbs.db
+Desktop.ini
+
+# Python / Machine Learning
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pkl
+*.model
+
+# Pastas locais e caches
+.env
+.vscode/
+.idea/
+node_modules/
+vendor/
+
+# Logs
+*.log
