@@ -46,12 +46,7 @@
     </div>
 
     <!-- Navbar -->
-    <nav class="navbar">
-        <h1><span>🤖</span> Lotofácil Pro - IA & Simulador</h1>
-        <div class="controls">
-            <button onclick="window.location.href='index.php'" class="btn" style="background: var(--secondary); color: white;">Voltar ao Menu</button>
-        </div>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container">
         <div class="grid-main">

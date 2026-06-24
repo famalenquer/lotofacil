@@ -37,12 +37,7 @@
         </div>
     </div>
 
-    <nav class="navbar">
-        <h1><span>📜</span> Verdades Absolutas (Painel Global)</h1>
-        <div class="controls">
-            <button onclick="window.location.href='index.php'" class="btn" style="background: var(--secondary); color: white; width: auto;">Voltar ao Menu</button>
-        </div>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container" style="display:none;" id="mainContainer">
         

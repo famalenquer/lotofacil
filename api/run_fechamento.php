@@ -7,7 +7,8 @@ header('Content-Type: application/json');
 $pythonExe = 'C:\\Users\\Fabiano\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe';
 $script = dirname(__DIR__) . '/python_scripts/fechamento.py';
 
-$cmd = escapeshellarg($pythonExe) . ' ' . escapeshellarg($script) . ' 2>&1';
+$strategy = isset($_GET['strategy']) ? $_GET['strategy'] : 'normal';
+$cmd = escapeshellarg($pythonExe) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($strategy) . ' 2>&1';
 $output = shell_exec($cmd);
 
 if (!$output) {

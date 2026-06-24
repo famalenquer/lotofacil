@@ -1,14 +1,19 @@
 import json
 import itertools
+import sys
 import engine_preditivo
+import ml_kmeans
 
 def intersecao(c1, c2):
     return len(set(c1).intersection(set(c2)))
 
-def gerar_fechamento_18_15_14():
+def gerar_fechamento(estrategia='normal'):
     """
-    Fechamento de 18 dezenas escolhidas, jogando bilhetes de 15,
-    com garantia de 14 pontos se as 15 sorteadas estiverem entre as 18.
+    Fechamento de 18 dezenas escolhidas, jogando bilhetes de 15.
+    Estrategias:
+    - normal: Garante 14 pontos se acertar 15 (Custo ~R$84)
+    - economico: Garante 13 pontos se acertar 15 (Custo ~R$21)
+    - filtro_ia: Garante 14 pontos, mas destrói jogos que fogem do K-Means (Custo Variável)
     """
     try:
         conn = engine_preditivo.get_db_connection()
@@ -39,21 +44,21 @@ def gerar_fechamento_18_15_14():
         alvos_nao_cobertos = set(universo_masks)
         bilhetes_escolhidos_masks = []
         
-        # PRÉ-CÁLCULO (Faz o bit_count apenas 1 vez por par, gerando a matriz em C-Level)
+        # PRÉ-CÁLCULO: Define o Alvo de Acertos baseado na Estratégia
+        acertos_alvo = 13 if estrategia == 'economico' else 14
+        
         cobertura_dict = {}
         for c in universo_masks:
-            cobertura_dict[c] = {alvo for alvo in alvos_nao_cobertos if (c & alvo).bit_count() >= 14}
+            cobertura_dict[c] = {alvo for alvo in alvos_nao_cobertos if (c & alvo).bit_count() >= acertos_alvo}
         
-        # Algoritmo Guloso (Set Cover) - Usando cache O(1)
+        # Algoritmo Guloso (Set Cover)
         while alvos_nao_cobertos:
             melhor_bilhete = None
             max_cobertura = -1
             alvos_cobertos_pelo_melhor = set()
             
             for candidato in universo_masks:
-                # Interseção nativa de sets em C (MUITO mais rápido que recalcular o bit_count no Python puro)
                 cobertos = cobertura_dict[candidato] & alvos_nao_cobertos
-                
                 if len(cobertos) > max_cobertura:
                     max_cobertura = len(cobertos)
                     melhor_bilhete = candidato
@@ -71,17 +76,42 @@ def gerar_fechamento_18_15_14():
                     jogo_real.append(idx_to_num[i])
             jogos.append(jogo_real)
             
+        # ----------------------------------------------------
+        # Aplicação da FACA DA IA (Filtro K-Means Extremo)
+        # ----------------------------------------------------
+        msg_filtro = ""
+        jogos_finais = jogos
+        if estrategia == 'filtro_ia':
+            kmeans_data = ml_kmeans.run_kmeans()
+            if kmeans_data.get('status') == 'success':
+                clima_id = kmeans_data.get('clima_atual', -1)
+                perfil = kmeans_data['perfis_clusters'].get(str(clima_id))
+                
+                # Aplica a guilhotina em cada bilhete
+                jogos_filtrados = []
+                for jogo in jogos:
+                    if engine_preditivo.e_jogo_perfeito_dinamico(jogo, perfil):
+                        jogos_filtrados.append(jogo)
+                
+                msg_filtro = f"A IA destruiu {len(jogos) - len(jogos_filtrados)} jogos que não se encaixavam no Clima {clima_id}!"
+                jogos_finais = jogos_filtrados
+            
         return {
             "status": "success",
             "dezenas_base": melhores_18,
-            "quantidade_jogos": len(jogos),
-            "jogos": jogos,
-            "economia_reais": (816 - len(jogos)) * 3.00, # Economia real baseada no preço da aposta simples (R$ 3,00)
-            "usa_ml": usa_ml
+            "quantidade_jogos": len(jogos_finais),
+            "jogos": jogos_finais,
+            "economia_reais": (816 - len(jogos_finais)) * 3.50,
+            "usa_ml": usa_ml,
+            "estrategia_usada": estrategia,
+            "msg_filtro": msg_filtro
         }
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    print(json.dumps(gerar_fechamento_18_15_14()))
+    estrategia = 'normal'
+    if len(sys.argv) > 1:
+        estrategia = sys.argv[1]
+    print(json.dumps(gerar_fechamento(estrategia)))

@@ -6,9 +6,9 @@ async function gerarFechamento() {
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-        // Cache buster para evitar respostas corrompidas cacheadas
+        const strategy = document.getElementById('strategySelect').value;
         const cacheBuster = new Date().getTime();
-        const response = await fetch(`api/run_fechamento.php?t=${cacheBuster}`, {
+        const response = await fetch(`api/run_fechamento.php?strategy=${strategy}&t=${cacheBuster}`, {
             signal: controller.signal,
             headers: {
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -66,12 +66,26 @@ function renderResultados(data) {
     
     // Render Dados Financeiros
     document.getElementById('qtdJogos').innerText = data.quantidade_jogos;
+    document.getElementById('dezenasBase').innerText = data.dezenas_base.map(n => n.toString().padStart(2, '0')).join(' ');
     
-    const custo = data.quantidade_jogos * 3;
-    document.getElementById('custoJogos').innerText = `R$ ${custo},00`;
+    const custo = parseFloat(data.quantidade_jogos * 3.50).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    document.getElementById('custoJogos').innerText = `R$ ${custo}`;
     
     const econ = parseFloat(data.economia_reais).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     document.getElementById('economiaJogos').innerText = `R$ ${econ}`;
+    
+    // Mensagem da Faca da IA
+    const msgIa = document.getElementById('msgFiltroIa') || document.createElement('div');
+    msgIa.id = 'msgFiltroIa';
+    msgIa.style.color = 'var(--danger)';
+    msgIa.style.marginTop = '15px';
+    msgIa.style.fontWeight = 'bold';
+    if (data.msg_filtro) {
+        msgIa.innerText = "🤖 " + data.msg_filtro;
+    } else {
+        msgIa.innerText = "";
+    }
+    document.getElementById('resultados').insertBefore(msgIa, document.getElementById('volanteGrid'));
     
     // Salva globalmente para exportação
     window.lastGeneratedGames = data.jogos;
@@ -98,6 +112,18 @@ function renderResultados(data) {
         grid.appendChild(card);
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('strategySelect');
+    const hint = document.getElementById('strategyHint');
+    if (select) {
+        select.addEventListener('change', (e) => {
+            if (e.target.value === 'normal') hint.innerText = "Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.";
+            if (e.target.value === 'economico') hint.innerText = "Garantia matemática de 13 pontos. Ideal para reduzir drasticamente o investimento.";
+            if (e.target.value === 'filtro_ia') hint.innerText = "Destrói bilhetes matemáticos que não se alinham ao Clima de hoje. Perde a garantia 100%, mas foca na alta probabilidade.";
+        });
+    }
+});
 
 function showLoader() {
     document.getElementById('loader').style.display = 'flex';

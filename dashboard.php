@@ -16,20 +16,20 @@
     </div>
 
     <!-- Navbar -->
-    <nav class="navbar">
-        <h1><span>🎱</span> Lotofácil Pro Analytics</h1>
-        <div class="controls">
-            <select id="periodFilter">
-                <option value="20">Últimos 20</option>
-                <option value="50">Últimos 50</option>
-                <option value="100" selected>Últimos 100</option>
-                <option value="500">Últimos 500</option>
-            </select>
-            <button onclick="window.location.href='index.php'" style="background: var(--card-bg); border: 1px solid var(--card-border); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s;">Voltar ao Menu</button>
-        </div>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container">
+        <!-- Dashboard Header & Controls -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--text-main);">Visão Geral do Histórico</h2>
+            <select id="periodFilter" style="padding: 8px 15px; border-radius: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--card-border); font-size: 1rem; cursor: pointer;">
+                <option value="50">Últimos 50 Sorteios</option>
+                <option value="100" selected>Últimos 100 Sorteios</option>
+                <option value="250">Últimos 250 Sorteios</option>
+                <option value="all">Todo o Histórico</option>
+            </select>
+        </div>
+
         <!-- Top Cards -->
         <div class="grid-top">
             <div class="card">

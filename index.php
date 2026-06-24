@@ -60,9 +60,7 @@
 <body>
 
     <!-- Navbar -->
-    <nav class="navbar" style="justify-content: center;">
-        <h1><span>🎱</span> Lotofácil Pro Analytics</h1>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container">
         <div class="hero">

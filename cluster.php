@@ -15,12 +15,7 @@
         </div>
     </div>
 
-    <nav class="navbar">
-        <h1><span>🌦️</span> K-Means - O "Clima" da Loteria</h1>
-        <div class="controls">
-            <button onclick="window.location.href='index.php'" class="btn" style="background: var(--secondary); color: white; width: auto;">Voltar ao Menu</button>
-        </div>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container">
         <div class="card" style="margin-bottom: 20px; text-align: center;">

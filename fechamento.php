@@ -46,20 +46,24 @@
         </div>
     </div>
 
-    <nav class="navbar">
-        <h1><span>🎯</span> Fechamento Matemático Inteligente</h1>
-        <div class="controls">
-            <button onclick="window.location.href='index.php'" class="btn" style="background: var(--secondary); color: white; width: auto;">Voltar ao Menu</button>
-        </div>
-    </nav>
+    <?php include 'header.php'; ?>
 
     <div class="container">
         <div class="card" style="margin-bottom: 20px; text-align: center;">
             <p class="stat-desc" style="font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
                 Este algoritmo extrai as <strong>18 dezenas mais poderosas</strong> indicadas pela Inteligência Artificial. Em vez de você jogar as 816 combinações possíveis, a Teoria dos Conjuntos reduz seus bilhetes para garantir <strong>14 Pontos</strong> gastando o mínimo absoluto.
             </p>
-            <br>
-            <button class="btn" onclick="gerarFechamento()" style="font-size: 1.2rem; padding: 15px 30px;">⚡ Gerar Matriz Reduzida</button>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: var(--primary); margin-bottom: 10px; font-size: 1.1rem;">Estratégia de Fechamento</h3>
+                <select id="strategySelect" style="width: 100%; padding: 10px; border-radius: 5px; background: #1a1f2e; color: white; border: 1px solid var(--primary); font-size: 1rem; cursor: pointer;">
+                    <option value="normal">🎯 Normal: 24 Jogos (Custo: R$ 84,00 | Garantia 14 pts: 100%)</option>
+                    <option value="economico">💸 Econômico: ~6 Jogos (Custo: R$ 21,00 | Garantia 13 pts: 100%)</option>
+                    <option value="filtro_ia">🤖 Faca da IA: ~10 Jogos (Aplica Filtro de Clima nos 24 jogos base)</option>
+                </select>
+                <p id="strategyHint" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.</p>
+            </div>
+            
+            <button class="btn" onclick="gerarFechamento()" style="font-size: 1.2rem; padding: 15px 30px; width: 100%;">🛡️ Otimizar em C-Level</button>
         </div>
         
         <div id="resultados" style="display: none;">
