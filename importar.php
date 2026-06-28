@@ -31,7 +31,12 @@
 
     <div class="container import-container">
         <div class="card">
-            <div class="card-title" style="color: var(--primary); font-size: 1.5rem; margin-bottom: 20px;">Importar Resultados da Caixa</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <div class="card-title" style="color: var(--primary); font-size: 1.5rem; margin-bottom: 0;">Importar Resultados da Caixa</div>
+                <a href="https://loterias.caixa.gov.br/Paginas/Lotofacil.aspx" target="_blank" style="padding: 6px 12px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    🔗 Site Oficial (Caixa)
+                </a>
+            </div>
             
             <?php
             if (isset($_GET['status'])) {

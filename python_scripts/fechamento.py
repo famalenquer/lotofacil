@@ -27,12 +27,37 @@ def gerar_fechamento(estrategia='normal'):
         scores, usa_ml = engine_preditivo.calcular_scores_hibridos(historico)
         dezenas_ordenadas = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         
-        # Pega as 18 melhores
-        melhores_18 = sorted([x[0] for x in dezenas_ordenadas[:18]])
+        total_base = 18
+        num_fixas = 0
+        acertos_alvo = 14
         
-        # Mapeamento para acelerar a combinatória (Bitwise)
-        idx_to_num = {i: melhores_18[i] for i in range(18)}
-        universo_idx = list(itertools.combinations(range(18), 15))
+        if estrategia == 'economico':
+            acertos_alvo = 13
+        elif estrategia == 'diamante_economico':
+            total_base = 19
+            num_fixas = 3
+            acertos_alvo = 13
+        elif estrategia == 'diamante_supremo':
+            total_base = 20
+            num_fixas = 3
+            acertos_alvo = 13
+            
+        melhores = [x[0] for x in dezenas_ordenadas[:total_base]]
+        
+        dezenas_fixas = []
+        if num_fixas > 0:
+            dezenas_fixas = sorted(melhores[:num_fixas])
+            dezenas_variaveis = sorted(melhores[num_fixas:])
+        else:
+            dezenas_variaveis = sorted(melhores)
+            
+        melhores_base = sorted(melhores)
+            
+        qtd_variaveis_no_bilhete = 15 - num_fixas
+        total_vars = len(dezenas_variaveis)
+        
+        idx_to_num = {i: dezenas_variaveis[i] for i in range(total_vars)}
+        universo_idx = list(itertools.combinations(range(total_vars), qtd_variaveis_no_bilhete))
         
         universo_masks = []
         for comb in universo_idx:
@@ -44,37 +69,25 @@ def gerar_fechamento(estrategia='normal'):
         alvos_nao_cobertos = set(universo_masks)
         bilhetes_escolhidos_masks = []
         
-        # PRÉ-CÁLCULO: Define o Alvo de Acertos baseado na Estratégia
-        acertos_alvo = 13 if estrategia == 'economico' else 14
+        acertos_vars_alvo = acertos_alvo - num_fixas
         
         cobertura_dict = {}
         for c in universo_masks:
-            cobertura_dict[c] = {alvo for alvo in alvos_nao_cobertos if (c & alvo).bit_count() >= acertos_alvo}
+            cobertura_dict[c] = {alvo for alvo in alvos_nao_cobertos if (c & alvo).bit_count() >= acertos_vars_alvo}
         
-        # Algoritmo Guloso (Set Cover)
         while alvos_nao_cobertos:
-            melhor_bilhete = None
-            max_cobertura = -1
-            alvos_cobertos_pelo_melhor = set()
-            
-            for candidato in universo_masks:
-                cobertos = cobertura_dict[candidato] & alvos_nao_cobertos
-                if len(cobertos) > max_cobertura:
-                    max_cobertura = len(cobertos)
-                    melhor_bilhete = candidato
-                    alvos_cobertos_pelo_melhor = cobertos
-                    
+            melhor_bilhete = max(universo_masks, key=lambda cand: len(cobertura_dict[cand] & alvos_nao_cobertos))
+            alvos_cobertos_pelo_melhor = cobertura_dict[melhor_bilhete] & alvos_nao_cobertos
             bilhetes_escolhidos_masks.append(melhor_bilhete)
             alvos_nao_cobertos -= alvos_cobertos_pelo_melhor
             
-        # Converter Masks de volta para dezenas reais
         jogos = []
         for mask in bilhetes_escolhidos_masks:
-            jogo_real = []
-            for i in range(18):
+            jogo_real = list(dezenas_fixas)
+            for i in range(total_vars):
                 if (mask & (1 << i)):
                     jogo_real.append(idx_to_num[i])
-            jogos.append(jogo_real)
+            jogos.append(sorted(jogo_real))
             
         # ----------------------------------------------------
         # Aplicação da FACA DA IA (Filtro K-Means Extremo)
@@ -98,10 +111,11 @@ def gerar_fechamento(estrategia='normal'):
             
         return {
             "status": "success",
-            "dezenas_base": melhores_18,
+            "dezenas_base": melhores_base,
+            "dezenas_fixas": dezenas_fixas,
             "quantidade_jogos": len(jogos_finais),
             "jogos": jogos_finais,
-            "economia_reais": (816 - len(jogos_finais)) * 3.50,
+            "economia_reais": (3268760 - len(jogos_finais)) * 3.50, # comparando com o maximo
             "usa_ml": usa_ml,
             "estrategia_usada": estrategia,
             "msg_filtro": msg_filtro

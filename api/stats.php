@@ -3,19 +3,30 @@
 header('Content-Type: application/json');
 require_once '../config/db.php';
 
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
+$limitParam = isset($_GET['limit']) ? $_GET['limit'] : '100';
 
 try {
     // 1. Busca os últimos N concursos
-    $stmt = $pdo->prepare("
-        SELECT c.*, e.qtd_pares, e.qtd_impares, e.qtd_primos, e.soma_dezenas, e.repetidas_anterior 
-        FROM concursos c
-        LEFT JOIN estatisticas_concurso e ON c.concurso = e.concurso_id
-        ORDER BY c.concurso DESC 
-        LIMIT :limit
-    ");
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-    $stmt->execute();
+    if ($limitParam === 'all') {
+        $stmt = $pdo->prepare("
+            SELECT c.*, e.qtd_pares, e.qtd_impares, e.qtd_primos, e.soma_dezenas, e.repetidas_anterior 
+            FROM concursos c
+            LEFT JOIN estatisticas_concurso e ON c.concurso = e.concurso_id
+            ORDER BY c.concurso DESC
+        ");
+        $stmt->execute();
+    } else {
+        $limit = (int)$limitParam;
+        $stmt = $pdo->prepare("
+            SELECT c.*, e.qtd_pares, e.qtd_impares, e.qtd_primos, e.soma_dezenas, e.repetidas_anterior 
+            FROM concursos c
+            LEFT JOIN estatisticas_concurso e ON c.concurso = e.concurso_id
+            ORDER BY c.concurso DESC 
+            LIMIT :limit
+        ");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+    }
     $resultados = $stmt->fetchAll();
 
     if (!$resultados) {

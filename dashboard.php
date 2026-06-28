@@ -20,8 +20,13 @@
 
     <div class="container">
         <!-- Dashboard Header & Controls -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="color: var(--text-main);">Visão Geral do Histórico</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <h2 style="color: var(--text-main); margin: 0;">Visão Geral do Histórico</h2>
+                <a href="https://loterias.caixa.gov.br/Paginas/Lotofacil.aspx" target="_blank" style="padding: 6px 12px; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                    🔗 Resultados da Caixa
+                </a>
+            </div>
             <select id="periodFilter" style="padding: 8px 15px; border-radius: 8px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--card-border); font-size: 1rem; cursor: pointer;">
                 <option value="50">Últimos 50 Sorteios</option>
                 <option value="100" selected>Últimos 100 Sorteios</option>

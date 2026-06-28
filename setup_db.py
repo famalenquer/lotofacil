@@ -50,6 +50,21 @@ try:
     ) ENGINE=InnoDB;
     """)
 
+    # Criar Tabela jogos_salvos
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS jogos_salvos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nome_estrategia VARCHAR(100) NOT NULL,
+        dezenas_base JSON NOT NULL,
+        dezenas_fixas JSON,
+        jogos JSON NOT NULL,
+        qtd_jogos INT NOT NULL,
+        custo DECIMAL(10, 2) NOT NULL,
+        concurso_alvo INT DEFAULT NULL,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB;
+    """)
+
     connection.commit()
     print("Banco de dados e tabelas criados com sucesso!")
 

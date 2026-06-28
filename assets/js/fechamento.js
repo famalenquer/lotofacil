@@ -57,9 +57,15 @@ function renderResultados(data) {
     // Render Dezenas Base
     const baseContainer = document.getElementById('dezenasBase');
     baseContainer.innerHTML = '';
+    const fixas = data.dezenas_fixas || [];
     data.dezenas_base.forEach(num => {
         const el = document.createElement('div');
         el.className = 'dezena-base';
+        if (fixas.includes(num)) {
+            el.style.background = 'linear-gradient(135deg, #fbbf24, #b45309)';
+            el.style.border = '2px solid #fef08a';
+            el.title = 'Dezena Fixa';
+        }
         el.innerText = num.toString().padStart(2, '0');
         baseContainer.appendChild(el);
     });
@@ -87,8 +93,18 @@ function renderResultados(data) {
     }
     document.getElementById('resultados').insertBefore(msgIa, document.getElementById('volanteGrid'));
     
-    // Salva globalmente para exportação
+    // Salva globalmente para exportação e para salvar no BD
+    const select = document.getElementById('strategySelect');
+    window.lastGeneratedData = {
+        nome_estrategia: select.options[select.selectedIndex].text.split(':')[0],
+        dezenas_base: data.dezenas_base,
+        dezenas_fixas: data.dezenas_fixas || [],
+        jogos: data.jogos,
+        qtd_jogos: data.quantidade_jogos,
+        custo: data.quantidade_jogos * 3.50
+    };
     window.lastGeneratedGames = data.jogos;
+
     
     // Render Volantes
     const grid = document.getElementById('volanteGrid');
@@ -99,8 +115,10 @@ function renderResultados(data) {
         card.className = 'volante-card';
         
         let bolas = '';
+        const fixas = data.dezenas_fixas || [];
         jogo.forEach(num => {
-            bolas += `<span class="volante-bola">${num.toString().padStart(2, '0')}</span>`;
+            const style = fixas.includes(num) ? 'background: #ca8a04; color: white; border-color: #facc15;' : '';
+            bolas += `<span class="volante-bola" style="${style}">${num.toString().padStart(2, '0')}</span>`;
         });
         
         card.innerHTML = `
@@ -121,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.value === 'normal') hint.innerText = "Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.";
             if (e.target.value === 'economico') hint.innerText = "Garantia matemática de 13 pontos. Ideal para reduzir drasticamente o investimento.";
             if (e.target.value === 'filtro_ia') hint.innerText = "Destrói bilhetes matemáticos que não se alinham ao Clima de hoje. Perde a garantia 100%, mas foca na alta probabilidade.";
+            if (e.target.value === 'diamante_economico') hint.innerText = "Base enorme de 19 Dezenas. Trava 3 Dezenas Fixas de Ouro e garante 13 pontos se as fixas baterem.";
+            if (e.target.value === 'diamante_supremo') hint.innerText = "Joga apenas 5 números fora! 20 Dezenas com 3 Fixas de Ouro. Garante 13 pontos se as fixas baterem.";
         });
     }
 });
@@ -162,3 +182,43 @@ function exportarTXT() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+async function salvarJogo() {
+    if (!window.lastGeneratedData) {
+        alert("Nenhum jogo gerado para salvar!");
+        return;
+    }
+    
+    const btn = document.getElementById('btnSalvarJogo');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Salvando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch('api/salvar_jogo.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(window.lastGeneratedData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            btn.innerHTML = '✅ Salvo!';
+            btn.style.background = '#059669';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '#10b981';
+                btn.disabled = false;
+            }, 3000);
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao salvar o jogo: " + e.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+

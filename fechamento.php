@@ -59,6 +59,8 @@
                     <option value="normal">🎯 Normal: 24 Jogos (Custo: R$ 84,00 | Garantia 14 pts: 100%)</option>
                     <option value="economico">💸 Econômico: ~6 Jogos (Custo: R$ 21,00 | Garantia 13 pts: 100%)</option>
                     <option value="filtro_ia">🤖 Faca da IA: ~10 Jogos (Aplica Filtro de Clima nos 24 jogos base)</option>
+                    <option value="diamante_economico">💎 Diamante Econômico: 19 Dezenas c/ 3 Fixas (Custo: ~R$ 35,00 | Garantia 13 pts)</option>
+                    <option value="diamante_supremo">👑 Diamante Supremo: 20 Dezenas c/ 3 Fixas (Custo: ~R$ 87,50 | Garantia 13 pts)</option>
                 </select>
                 <p id="strategyHint" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.</p>
             </div>
@@ -90,7 +92,10 @@
             
             <h3 style="color: var(--text-main); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                 📋 Volantes para preencher na lotérica:
-                <button class="btn" onclick="exportarTXT()" style="background: var(--secondary); font-size: 0.9rem; padding: 8px 15px; width: auto;">⬇️ Baixar .TXT</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn" onclick="salvarJogo()" id="btnSalvarJogo" style="background: #10b981; font-size: 0.9rem; padding: 8px 15px; width: auto; border: none;">💾 Salvar Meu Jogo</button>
+                    <button class="btn" onclick="exportarTXT()" style="background: var(--secondary); font-size: 0.9rem; padding: 8px 15px; width: auto; border: none;">⬇️ Baixar .TXT</button>
+                </div>
             </h3>
             <div class="volante-grid" id="volanteGrid">
                 <!-- Jogos gerados via JS -->
