@@ -54,6 +54,18 @@ async function gerarFechamento() {
 function renderResultados(data) {
     document.getElementById('resultados').style.display = 'block';
     
+    // Atualiza Textos Dinâmicos de Resultado
+    const baseCount = data.dezenas_base.length;
+    document.getElementById('resultadosTituloBase').innerText = `As ${baseCount} Dezenas Base Selecionadas pela IA`;
+    
+    let garantiaTexto = "Garantia de 14pts";
+    if (baseCount >= 19 || document.getElementById('strategySelect').value === 'economico') {
+        garantiaTexto = "Garantia de 13pts";
+    } else if (document.getElementById('strategySelect').value === 'filtro_ia') {
+        garantiaTexto = "Alta Probabilidade (sem garantia absoluta)";
+    }
+    document.getElementById('resultadosGarantia').innerText = `Jogos Gerados (${garantiaTexto})`;
+    
     // Render Dezenas Base
     const baseContainer = document.getElementById('dezenasBase');
     baseContainer.innerHTML = '';
@@ -134,14 +146,29 @@ function renderResultados(data) {
 document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('strategySelect');
     const hint = document.getElementById('strategyHint');
+    const topDesc = document.getElementById('strategyTopDesc');
+    
     if (select) {
         select.addEventListener('change', (e) => {
-            if (e.target.value === 'normal') hint.innerText = "Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.";
-            if (e.target.value === 'economico') hint.innerText = "Garantia matemática de 13 pontos. Ideal para reduzir drasticamente o investimento.";
-            if (e.target.value === 'filtro_ia') hint.innerText = "Destrói bilhetes matemáticos que não se alinham ao Clima de hoje. Perde a garantia 100%, mas foca na alta probabilidade.";
-            if (e.target.value === 'diamante_economico') hint.innerText = "Base enorme de 19 Dezenas. Trava 3 Dezenas Fixas de Ouro e garante 13 pontos se as fixas baterem.";
-            if (e.target.value === 'diamante_supremo') hint.innerText = "Joga apenas 5 números fora! 20 Dezenas com 3 Fixas de Ouro. Garante 13 pontos se as fixas baterem.";
+            if (e.target.value === 'normal') {
+                hint.innerText = "Garantia matemática absoluta de 14 pontos. Maior rede de proteção possível.";
+                topDesc.innerHTML = "Este algoritmo extrai as <strong>18 dezenas mais poderosas</strong> indicadas pela Inteligência Artificial. A Teoria dos Conjuntos reduz seus bilhetes para garantir <strong>14 Pontos</strong> gastando o mínimo absoluto.";
+            } else if (e.target.value === 'economico') {
+                hint.innerText = "Garantia matemática de 13 pontos. Ideal para reduzir drasticamente o investimento.";
+                topDesc.innerHTML = "Este algoritmo extrai as <strong>18 dezenas mais poderosas</strong>. O fechamento reduz seus bilhetes focando em garantir <strong>13 Pontos</strong> com o menor custo possível.";
+            } else if (e.target.value === 'filtro_ia') {
+                hint.innerText = "Destrói bilhetes matemáticos que não se alinham ao Clima de hoje. Perde a garantia 100%, mas foca na alta probabilidade.";
+                topDesc.innerHTML = "O algoritmo gera as combinações das <strong>18 dezenas</strong> e aplica os filtros avançados da IA (Pares/Ímpares, Moldura, Soma) para cortar jogos improváveis e baratear o custo.";
+            } else if (e.target.value === 'diamante_economico') {
+                hint.innerText = "Base enorme de 19 Dezenas. Trava 3 Dezenas Fixas de Ouro e garante 13 pontos se as fixas baterem.";
+                topDesc.innerHTML = "O algoritmo expande o universo para <strong>19 dezenas</strong>. Ao cravar <strong>3 fixas</strong>, o modelo de Teoria dos Conjuntos reduz drasticamente o custo mantendo a garantia de <strong>13 Pontos</strong>.";
+            } else if (e.target.value === 'diamante_supremo') {
+                hint.innerText = "Joga apenas 5 números fora! 20 Dezenas com 3 Fixas de Ouro. Garante 13 pontos se as fixas baterem.";
+                topDesc.innerHTML = "O fechamento mais abrangente: <strong>20 dezenas base</strong>. Com apenas <strong>3 fixas</strong>, você elimina quase o risco de errar as dezenas e busca <strong>13 Pontos</strong> de forma suprema.";
+            }
         });
+        // Dispara o evento na inicialização para ajustar ao padrão caso esteja cacheado
+        select.dispatchEvent(new Event('change'));
     }
 });
 

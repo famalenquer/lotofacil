@@ -50,7 +50,7 @@
 
     <div class="container">
         <div class="card" style="margin-bottom: 20px; text-align: center;">
-            <p class="stat-desc" style="font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
+            <p class="stat-desc" id="strategyTopDesc" style="font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
                 Este algoritmo extrai as <strong>18 dezenas mais poderosas</strong> indicadas pela Inteligência Artificial. Em vez de você jogar as 816 combinações possíveis, a Teoria dos Conjuntos reduz seus bilhetes para garantir <strong>14 Pontos</strong> gastando o mínimo absoluto.
             </p>
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
@@ -71,12 +71,12 @@
         <div id="resultados" style="display: none;">
             <!-- Info do Fechamento -->
             <div class="card" style="margin-bottom: 20px;">
-                <div class="card-title" style="text-align: center;">As 18 Dezenas Base Selecionadas pela IA</div>
+                <div class="card-title" id="resultadosTituloBase" style="text-align: center;">As 18 Dezenas Base Selecionadas pela IA</div>
                 <div id="dezenasBase" style="text-align: center; margin: 20px 0;"></div>
                 
                 <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 30px; border-top: 1px solid var(--card-border); padding-top: 20px;">
                     <div>
-                        <div class="stat-desc">Jogos Gerados (Garantia de 14pts)</div>
+                        <div class="stat-desc" id="resultadosGarantia">Jogos Gerados (Garantia de 14pts)</div>
                         <div class="stat-value" id="qtdJogos" style="color: var(--primary); font-size: 2.5rem;">--</div>
                     </div>
                     <div>

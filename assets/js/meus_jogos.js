@@ -141,19 +141,25 @@ function renderizarAnalise(id) {
                 <span class="${lucroClass}" style="font-size: 1.2rem;">R$ ${data.lucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
              </div>`;
 
-    if (!isSimulacao) {
-        let condicionalIA = "";
-        if (data.total_fixas > 0) {
-            condicionalIA = `Nesta estratégia (<strong>${data.nome_estrategia}</strong>), você fixou ${data.total_fixas} dezenas e acertou ${data.acertos_fixas}. A matemática do fechamento cumpriu seu papel com base no que foi escolhido! Se você tivesse acertado todas as ${data.total_fixas} fixas e a proporção da base se mantivesse, o fechamento teria sido forçado a te entregar múltiplos prêmios altos (13 ou 14 pontos garantidos).`;
-        } else {
-            condicionalIA = `Nesta estratégia (<strong>${data.nome_estrategia}</strong>), você jogou com uma base de ${data.total_base} dezenas e acertou ${data.acertos_base}. Se o seu universo de ${data.total_base} dezenas tivesse englobado todas as 15 sorteadas, o algoritmo de otimização teria garantido uma pontuação altíssima (14 ou 15 pontos) com este exato número de cartões.`;
-        }
+    if (!isSimulacao && data.diagnosticos_ia && data.diagnosticos_ia.length > 0) {
+        html += `<div style="margin-top: 25px; margin-bottom: 25px;">
+                    <h4 style="color: #a855f7; margin-bottom: 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); padding-bottom: 10px;">🤖 Laudo Avançado da IA</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">`;
+                    
+        data.diagnosticos_ia.forEach(diag => {
+            let bg, border, color, icon;
+            if (diag.tipo === 'danger') { bg = 'rgba(239, 68, 68, 0.05)'; border = '#ef4444'; color = '#ef4444'; icon = '🚨'; }
+            else if (diag.tipo === 'warning') { bg = 'rgba(245, 158, 11, 0.05)'; border = '#f59e0b'; color = '#f59e0b'; icon = '⚠️'; }
+            else if (diag.tipo === 'success') { bg = 'rgba(16, 185, 129, 0.05)'; border = '#10b981'; color = '#10b981'; icon = '✅'; }
+            else { bg = 'rgba(59, 130, 246, 0.05)'; border = '#3b82f6'; color = '#3b82f6'; icon = '💡'; }
+            
+            html += `<div style="background: ${bg}; border: 1px solid rgba(255,255,255,0.05); border-left: 4px solid ${border}; border-radius: 4px; padding: 12px;">
+                        <h6 style="color: ${color}; margin-top: 0; margin-bottom: 8px; font-size: 1rem; font-weight: bold;">${icon} ${diag.titulo}</h6>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin: 0;">${diag.mensagem}</p>
+                     </div>`;
+        });
         
-        html += `<div style="margin-top: 25px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-left: 4px solid #3b82f6; border-radius: 8px; padding: 15px;">
-                    <h5 style="color: #3b82f6; margin-top: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">🤖 Diagnóstico da Estratégia</h5>
-                    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
-                        ${condicionalIA}
-                    </p>
+        html += `   </div>
                  </div>`;
     }
 

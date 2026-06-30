@@ -42,7 +42,35 @@ def gerar_fechamento(estrategia='normal'):
             num_fixas = 3
             acertos_alvo = 13
             
-        melhores = [x[0] for x in dezenas_ordenadas[:total_base]]
+        ultimo_resultado = {historico[0][f'b{j}'] for j in range(1, 16)}
+        
+        # Filtro Matemático para a Base (Evita que a base replique o último concurso)
+        # Lotofácil repete de 8 a 10 dezenas. Para uma base de 18, não devemos ter mais que 11 repetidas.
+        max_repetidas_na_base = 11 if total_base == 18 else (12 if total_base == 19 else 13)
+        
+        melhores = []
+        repetidas_inclusas = 0
+        ausentes_inclusas = 0
+        
+        for dez, score in dezenas_ordenadas:
+            if len(melhores) >= total_base:
+                break
+                
+            if dez in ultimo_resultado:
+                if repetidas_inclusas < max_repetidas_na_base:
+                    melhores.append(dez)
+                    repetidas_inclusas += 1
+            else:
+                melhores.append(dez)
+                ausentes_inclusas += 1
+                
+        # Caso falte preencher por restrição, completamos
+        if len(melhores) < total_base:
+            for dez, score in dezenas_ordenadas:
+                if dez not in melhores:
+                    melhores.append(dez)
+                if len(melhores) >= total_base:
+                    break
         
         dezenas_fixas = []
         if num_fixas > 0:
@@ -103,10 +131,10 @@ def gerar_fechamento(estrategia='normal'):
                 # Aplica a guilhotina em cada bilhete
                 jogos_filtrados = []
                 for jogo in jogos:
-                    if engine_preditivo.e_jogo_perfeito_dinamico(jogo, perfil):
+                    if engine_preditivo.e_jogo_perfeito_dinamico(jogo, perfil, ultimo_resultado):
                         jogos_filtrados.append(jogo)
                 
-                msg_filtro = f"A IA destruiu {len(jogos) - len(jogos_filtrados)} jogos que não se encaixavam no Clima {clima_id}!"
+                msg_filtro = f"A IA destruiu {len(jogos) - len(jogos_filtrados)} jogos que não se encaixavam no Clima {clima_id} ou na Regra de Repetidas!"
                 jogos_finais = jogos_filtrados
             
         return {

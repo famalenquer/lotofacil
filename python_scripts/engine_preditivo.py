@@ -7,10 +7,12 @@ import os
 import joblib
 import pandas as pd
 import warnings
+from datetime import datetime
 
-# Integrações da V5
+# Integrações da V5 e V7
 import ml_kmeans
 import stats_historicas
+import correlacao
 
 warnings.filterwarnings('ignore')
 
@@ -74,10 +76,64 @@ def calcular_atrasos(historico):
         atrasos[i] = count
     return atrasos
 
+def calcular_score_sazonal(historico, dia_alvo=None):
+    if dia_alvo is None:
+        dia_alvo = datetime.now().weekday()
+        
+    freq_dia = {i: 0 for i in range(1, 26)}
+    count_dia = 0
+    
+    for row in historico:
+        if row.get('data_sorteio'):
+            if row['data_sorteio'].weekday() == dia_alvo:
+                count_dia += 1
+                bolas = [row[f'b{i}'] for i in range(1, 16)]
+                for b in bolas:
+                    freq_dia[b] += 1
+                    
+    scores_sazonais = {}
+    for i in range(1, 26):
+        if count_dia > 0:
+            prob = freq_dia[i] / count_dia
+            # Normalize around the theoretical mean (0.60)
+            scores_sazonais[i] = (prob / 0.60)
+        else:
+            scores_sazonais[i] = 1.0 # Neutral if no data
+            
+    return scores_sazonais
+
+def calcular_momentum(historico):
+    historico_recente = historico[:25]
+    freq_5 = {i: 0 for i in range(1, 26)}
+    freq_25 = {i: 0 for i in range(1, 26)}
+    
+    for idx, row in enumerate(historico_recente):
+        bolas = [row[f'b{i}'] for i in range(1, 16)]
+        for b in bolas:
+            freq_25[b] += 1
+            if idx < 5:
+                freq_5[b] += 1
+                
+    scores_momentum = {}
+    for i in range(1, 26):
+        esperado_5 = (freq_25[i] / 25) * 5 if freq_25[i] > 0 else 0
+        real_5 = freq_5[i]
+        diff = real_5 - esperado_5
+        
+        # Modifier: -1.0 to +1.0 roughly
+        modifier = 1.0 + (diff * 0.10)
+        scores_momentum[i] = max(0.5, min(1.5, modifier))
+        
+    return scores_momentum
+
 def calcular_scores_hibridos(historico):
     scores_estatisticos, freq_20, freq_100 = calcular_pesos_estatisticos(historico)
     atrasos = calcular_atrasos(historico)
     max_score = max(scores_estatisticos.values()) if scores_estatisticos else 1
+    
+    # V7: Momentum and Seasonality
+    scores_sazonais = calcular_score_sazonal(historico)
+    scores_momentum = calcular_momentum(historico)
     
     # ----------------------------------------------------
     # V6: Captura dos Verdadeiros Atrasos (Risco de Quebra)
@@ -118,6 +174,9 @@ def calcular_scores_hibridos(historico):
         else:
             base_score = score_estat * 100
             
+        # Aplica Sazonalidade e Momentum (V7)
+        base_score = base_score * scores_sazonais[i] * scores_momentum[i]
+            
         # V6: Super Multiplicador de Risco Extremo (+50%)
         if risco_map.get(i, False):
             base_score *= 1.50
@@ -126,10 +185,40 @@ def calcular_scores_hibridos(historico):
             
     return scores_finais, usa_ml
 
-def e_jogo_perfeito_dinamico(jogo, perfil_clima):
+def obter_top_pares_sinergia():
+    try:
+        dados_corr = correlacao.calcular_correlacao_e_alertas()
+        if dados_corr.get('status') == 'success':
+            return dados_corr.get('top_pares', [])
+    except:
+        pass
+    return []
+
+def avaliar_sinergia_jogo(jogo, top_pares):
+    # Calcula quantos dos top_pares estão contidos no jogo
+    bonus = 0
+    for par_str, freq in top_pares:
+        # par_str é algo como "01 e 02" ou "01-02", a implementação de correlacao retorna "01 e 02"
+        partes = par_str.replace(' e ', '-').split('-')
+        if len(partes) == 2:
+            try:
+                p1 = int(partes[0])
+                p2 = int(partes[1])
+                if p1 in jogo and p2 in jogo:
+                    bonus += 1
+            except:
+                pass
+    return bonus
+
+def e_jogo_perfeito_dinamico(jogo, perfil_clima, ultimo_resultado=None):
     if len(jogo) != 15:
         return True
         
+    if ultimo_resultado is not None:
+        repetidas = len(set(jogo).intersection(ultimo_resultado))
+        if not (8 <= repetidas <= 10):
+            return False
+
     primos_base = {2, 3, 5, 7, 11, 13, 17, 19, 23}
     pares = sum(1 for b in jogo if b % 2 == 0)
     impares = 15 - pares
@@ -138,16 +227,12 @@ def e_jogo_perfeito_dinamico(jogo, perfil_clima):
     moldura = sum(1 for b in jogo if b in moldura_base)
     soma = sum(jogo)
     
-    # ----------------------------------------------------
-    # V6: Se o Clima falhar, usamos o fallback tradicional
-    # ----------------------------------------------------
     if not perfil_clima:
         if not (7 <= impares <= 8): return False
         if not (5 <= primos <= 6): return False
         if not (181 <= soma <= 210): return False
         return True
 
-    # Filtros Dinâmicos baseados no K-Means (Margem de segurança para aceitação)
     margem_soma = 15
     margem_impares = 2
     margem_primos = 2
@@ -173,7 +258,6 @@ def gerar_sugestoes(qtd=3, tamanho=15):
             if not historico:
                 return {"status": "error", "message": "Nenhum dado no banco"}
                 
-            # V6: Detecta Clima Atual
             kmeans_data = ml_kmeans.run_kmeans()
             perfil = None
             clima_id = -1
@@ -181,11 +265,15 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                 clima_id = kmeans_data.get('clima_atual', -1)
                 perfil = kmeans_data['perfis_clusters'].get(str(clima_id))
                 
+            ultimo_resultado = {historico[0][f'b{j}'] for j in range(1, 16)}
+                
             scores, usado_ml = calcular_scores_hibridos(historico)
+            
+            # V7: Top Pares Sinergia
+            top_pares = obter_top_pares_sinergia()
             
             dezenas_ordenadas = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             
-            # Piscina maior
             pool_size = max(18, tamanho + 3)
             melhores_pool = [x[0] for x in dezenas_ordenadas[:pool_size]]
             
@@ -197,10 +285,13 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                 jogo = list(comb)
                 jogo.sort()
                 
-                # Usa os filtros inteligentes da V6
-                if e_jogo_perfeito_dinamico(jogo, perfil):
+                if e_jogo_perfeito_dinamico(jogo, perfil, ultimo_resultado):
                     score_jogo = sum(scores[b] for b in jogo) / tamanho
-                    eficiencia = min(99.9, max(95.0, score_jogo + random.uniform(0, 2)))
+                    
+                    # Aplica Bônus de Sinergia (V7)
+                    bonus_sinergia = avaliar_sinergia_jogo(jogo, top_pares) * 0.5 
+                    
+                    eficiencia = min(99.9, max(95.0, score_jogo + bonus_sinergia + random.uniform(0, 1)))
                     
                     sugestoes.append({
                         "dezenas": jogo,
@@ -217,7 +308,8 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                     ja_existe = any(s['dezenas'] == jogo for s in sugestoes)
                     if not ja_existe:
                         score_jogo = sum(scores[b] for b in jogo) / tamanho
-                        eficiencia = min(99.9, max(90.0, score_jogo + random.uniform(-1, 1)))
+                        bonus_sinergia = avaliar_sinergia_jogo(jogo, top_pares) * 0.5
+                        eficiencia = min(99.9, max(90.0, score_jogo + bonus_sinergia + random.uniform(-1, 0.5)))
                         sugestoes.append({"dezenas": jogo, "eficiencia": round(eficiencia, 2)})
                     if len(sugestoes) >= qtd:
                         break
@@ -257,3 +349,4 @@ if __name__ == "__main__":
         except: pass
             
     print(json.dumps(gerar_sugestoes(qtd, tamanho)))
+

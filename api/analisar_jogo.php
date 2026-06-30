@@ -84,6 +84,41 @@ try {
     
     $lucro = $valorTotalGanho - (float)$jogoSalvo['custo'];
     
+    // --- Módulo de Diagnóstico Avançado ---
+    $payload = json_encode([
+        'concurso_alvo' => $concursoSorteado,
+        'sorteadas' => $sorteadas,
+        'dezenas_base' => $dezenasBase,
+        'dezenas_fixas' => $dezenasFixas,
+        'lucro' => $lucro,
+        'nome_estrategia' => $jogoSalvo['nome_estrategia'],
+        'custo' => (float)$jogoSalvo['custo']
+    ]);
+    
+    $pythonExe = 'C:\\Users\\Fabiano\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe';
+    $pythonScript = dirname(__DIR__) . '/python_scripts/diagnostico_ia.py';
+    
+    // Save payload to a temporary file to avoid Windows command line escaping issues
+    $tempFile = sys_get_temp_dir() . '/payload_' . uniqid() . '.json';
+    file_put_contents($tempFile, $payload);
+    
+    $cmd = escapeshellarg($pythonExe) . " \"$pythonScript\" \"$tempFile\" 2>&1";
+    $laudoJson = shell_exec($cmd);
+    
+    // Clean up
+    @unlink($tempFile);
+    
+    // DEBUG: Write to log
+    file_put_contents(dirname(__DIR__) . '/api/debug_laudo.txt', "CMD: $cmd\nOUTPUT: $laudoJson\n", FILE_APPEND);
+    
+    $laudoIa = [];
+    if ($laudoJson) {
+        $laudoData = json_decode($laudoJson, true);
+        if ($laudoData && isset($laudoData['diagnosticos'])) {
+            $laudoIa = $laudoData['diagnosticos'];
+        }
+    }
+    
     echo json_encode([
         'status' => 'success',
         'concurso_analisado' => $concursoSorteado,
@@ -99,7 +134,8 @@ try {
         'valor_ganho' => $valorTotalGanho,
         'custo' => (float)$jogoSalvo['custo'],
         'lucro' => $lucro,
-        'volantes_analisados' => $volantesAnalisados
+        'volantes_analisados' => $volantesAnalisados,
+        'diagnosticos_ia' => $laudoIa
     ]);
     
 } catch (Exception $e) {
