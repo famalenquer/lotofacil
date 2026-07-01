@@ -326,9 +326,11 @@ select:hover, select:focus {
     max-width: 1400px;
     margin: 0 auto;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
     padding: 12px 30px;
+    gap: 15px;
 }
 
 .header-brand a {

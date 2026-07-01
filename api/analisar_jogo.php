@@ -122,6 +122,7 @@ try {
     echo json_encode([
         'status' => 'success',
         'concurso_analisado' => $concursoSorteado,
+        'concurso_alvo_salvo' => $jogoSalvo['concurso_alvo'],
         'nome_estrategia' => $jogoSalvo['nome_estrategia'],
         'sorteadas' => $sorteadas,
         'dezenas_base' => $dezenasBase,

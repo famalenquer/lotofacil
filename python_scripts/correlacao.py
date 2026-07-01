@@ -11,13 +11,30 @@ def get_db_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-def calcular_correlacao_e_alertas():
+def calcular_correlacao_e_alertas(historico_data=None):
+    if historico_data is not None:
+        if len(historico_data) > 1 and historico_data[0]['concurso'] < historico_data[-1]['concurso']:
+            historico = list(reversed(historico_data))
+        else:
+            historico = historico_data
+        historico = historico[:100]
+        return _process_correlacao(historico)
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             # Pegar últimos 100 sorteios para uma amostra recente mais forte
             cursor.execute("SELECT * FROM concursos ORDER BY concurso DESC LIMIT 100")
             historico = cursor.fetchall()
+            return _process_correlacao(historico)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        if conn:
+            conn.close()
+
+def _process_correlacao(historico):
+    try:
             
             if not historico:
                 return {"status": "error", "message": "Nenhum dado no banco"}
@@ -101,8 +118,6 @@ def calcular_correlacao_e_alertas():
 
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     print(json.dumps(calcular_correlacao_e_alertas()))

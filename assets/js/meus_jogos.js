@@ -136,10 +136,19 @@ function renderizarAnalise(id) {
     }
     
     const lucroClass = data.lucro >= 0 ? 'lucro-positivo' : 'lucro-negativo';
-    html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between;">
+    html += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center;">
                 <strong>Retorno Financeiro Líquido:</strong>
                 <span class="${lucroClass}" style="font-size: 1.2rem;">R$ ${data.lucro.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
              </div>`;
+
+    if (!data.concurso_alvo_salvo && !isSimulacao) {
+        html += `<div style="margin-top: 15px; text-align: center;">
+                    <button class="btn" onclick="travarResultado(${id}, ${data.concurso_analisado})" style="background: #10b981; border: none; padding: 10px 20px; font-size: 1rem;">
+                        💾 Salvar Resultado (Concurso ${data.concurso_analisado})
+                    </button>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Ao salvar, este jogo ficará permanentemente associado a este sorteio.</p>
+                 </div>`;
+    }
 
     if (!isSimulacao && data.diagnosticos_ia && data.diagnosticos_ia.length > 0) {
         html += `<div style="margin-top: 25px; margin-bottom: 25px;">
@@ -289,6 +298,39 @@ async function excluirJogo(id) {
     } catch (e) {
         console.error(e);
         alert("Erro ao excluir: " + e.message);
+    } finally {
+        const loader = document.getElementById('loader');
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 300);
+    }
+}
+
+async function travarResultado(id, concurso) {
+    if (!confirm(`Deseja travar este jogo no Concurso ${concurso}? Ao fazer isso, o resultado ficará salvo permanentemente.`)) {
+        return;
+    }
+    
+    document.getElementById('loader').style.display = 'flex';
+    document.getElementById('loader').style.opacity = '1';
+    
+    try {
+        const payload = { id: id, concurso_alvo: concurso };
+        const response = await fetch('api/travar_resultado.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            alert("✅ Resultado salvo com sucesso!");
+            window.location.reload(); // Reload to update button states
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao salvar resultado: " + e.message);
     } finally {
         const loader = document.getElementById('loader');
         loader.style.opacity = '0';

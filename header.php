@@ -14,6 +14,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <a href="dashboard.php" class="<?= $currentPage == 'dashboard.php' ? 'active' : '' ?>"><span class="nav-icon">📊</span><span class="nav-text">Painel</span></a>
             <a href="simulador.php" class="<?= $currentPage == 'simulador.php' ? 'active' : '' ?>"><span class="nav-icon">🤖</span><span class="nav-text">IA</span></a>
             <a href="fechamento.php" class="<?= $currentPage == 'fechamento.php' ? 'active' : '' ?>"><span class="nav-icon">🎯</span><span class="nav-text">Matriz</span></a>
+            <a href="fechamento_manual.php" class="<?= $currentPage == 'fechamento_manual.php' ? 'active' : '' ?>"><span class="nav-icon">✍️</span><span class="nav-text">Manual</span></a>
             <a href="meus_jogos.php" class="<?= $currentPage == 'meus_jogos.php' ? 'active' : '' ?>"><span class="nav-icon">💾</span><span class="nav-text">Meus Jogos</span></a>
             <a href="cluster.php" class="<?= $currentPage == 'cluster.php' ? 'active' : '' ?>"><span class="nav-icon">🌦️</span><span class="nav-text">Clima</span></a>
             <a href="records.php" class="<?= $currentPage == 'records.php' ? 'active' : '' ?>"><span class="nav-icon">📜</span><span class="nav-text">Histórico</span></a>
@@ -29,6 +30,7 @@ $titles = [
     'dashboard.php' => ['icon' => '📊', 'title' => 'Painel Estatístico', 'desc' => 'Visão geral das tendências e análise macro.'],
     'simulador.php' => ['icon' => '🤖', 'title' => 'Simulador e Inteligência Artificial', 'desc' => 'Gere palpites avançados ou faça backtesting de dezenas.'],
     'fechamento.php' => ['icon' => '🎯', 'title' => 'Fechamento Matemático Inteligente', 'desc' => 'Otimização com Teoria dos Conjuntos e Clima.'],
+    'fechamento_manual.php' => ['icon' => '✍️', 'title' => 'Fechamento Matemático Manual', 'desc' => 'Escolha suas próprias dezenas e aplique a Otimização.'],
     'meus_jogos.php' => ['icon' => '💾', 'title' => 'Meus Jogos Salvos', 'desc' => 'Gerencie seus bilhetes e confira o desempenho contra o último sorteio.'],
     'cluster.php' => ['icon' => '🌦️', 'title' => 'O Clima da Loteria (K-Means)', 'desc' => 'Mapeamento de Regimes Comportamentais dos Sorteios.'],
     'records.php' => ['icon' => '📜', 'title' => 'Verdades Históricas Absolutas', 'desc' => 'Monitoramento de Atrasos e Limites Matemáticos.'],

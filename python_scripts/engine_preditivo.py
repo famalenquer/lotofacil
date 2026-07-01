@@ -29,165 +29,232 @@ def fetch_history(cursor):
     cursor.execute("SELECT * FROM concursos ORDER BY concurso DESC")
     return cursor.fetchall()
 
-def calcular_pesos_estatisticos(historico):
-    freq_total = {i: 0 for i in range(1, 26)}
-    freq_100 = {i: 0 for i in range(1, 26)}
-    freq_20 = {i: 0 for i in range(1, 26)}
-    
-    total_concursos = len(historico)
-    if total_concursos == 0:
-        return {}
-
-    for idx, row in enumerate(historico):
-        bolas = [row[f'b{i}'] for i in range(1, 16)]
-        for b in bolas:
-            freq_total[b] += 1
-            if idx < 100:
-                freq_100[b] += 1
-            if idx < 20:
-                freq_20[b] += 1
-
-    def normalize(freq_dict, max_val):
-        if max_val == 0: return {k: 0 for k in freq_dict}
-        max_f = max(freq_dict.values())
-        if max_f == 0: return {k: 0 for k in freq_dict}
-        return {k: (v / max_f) * 100 for k, v in freq_dict.items()}
-
-    norm_total = normalize(freq_total, total_concursos)
-    norm_100 = normalize(freq_100, min(100, total_concursos))
-    norm_20 = normalize(freq_20, min(20, total_concursos))
-
-    scores = {}
-    for i in range(1, 26):
-        score = (norm_total[i] * 0.20) + (norm_100[i] * 0.30) + (norm_20[i] * 0.50)
-        scores[i] = round(score, 2)
-        
-    return scores, freq_20, freq_100
-
 def calcular_atrasos(historico):
-    atrasos = {i: -1 for i in range(1, 26)}
-    for i in range(1, 26):
-        count = 0
+    atraso_count = {d: 0 for d in range(1, 26)}
+    for d in range(1, 26):
+        atraso = 0
         for row in historico:
             bolas = {row[f'b{j}'] for j in range(1, 16)}
-            if i in bolas:
+            if d in bolas:
                 break
-            count += 1
-        atrasos[i] = count
-    return atrasos
+            atraso += 1
+        atraso_count[d] = atraso
+    return atraso_count
 
-def calcular_score_sazonal(historico, dia_alvo=None):
-    if dia_alvo is None:
-        dia_alvo = datetime.now().weekday()
+def calcular_features_concurso_atual(historico):
+    if len(historico) < 200:
+        return None
         
-    freq_dia = {i: 0 for i in range(1, 26)}
-    count_dia = 0
+    concurso_alvo = historico[0]['concurso'] + 1
+    sazonalidade = datetime.now().weekday()
     
-    for row in historico:
-        if row.get('data_sorteio'):
-            if row['data_sorteio'].weekday() == dia_alvo:
-                count_dia += 1
-                bolas = [row[f'b{i}'] for i in range(1, 16)]
-                for b in bolas:
-                    freq_dia[b] += 1
-                    
-    scores_sazonais = {}
-    for i in range(1, 26):
-        if count_dia > 0:
-            prob = freq_dia[i] / count_dia
-            # Normalize around the theoretical mean (0.60)
-            scores_sazonais[i] = (prob / 0.60)
-        else:
-            scores_sazonais[i] = 1.0 # Neutral if no data
-            
-    return scores_sazonais
+    janela_20 = historico[:20]
+    janela_50 = historico[:50]
+    janela_100 = historico[:100]
+    janela_200 = historico[:200]
+    janela_total = historico
+    
+    f_20 = {d: 0 for d in range(1, 26)}
+    f_50 = {d: 0 for d in range(1, 26)}
+    f_100 = {d: 0 for d in range(1, 26)}
+    f_200 = {d: 0 for d in range(1, 26)}
+    f_total = {d: 0 for d in range(1, 26)}
+    
+    for row in janela_total:
+        bolas = {row[f'b{j}'] for j in range(1, 16)}
+        for b in bolas: f_total[b] += 1
+    for row in janela_200:
+        bolas = {row[f'b{j}'] for j in range(1, 16)}
+        for b in bolas: f_200[b] += 1
+    for row in janela_100:
+        bolas = {row[f'b{j}'] for j in range(1, 16)}
+        for b in bolas: f_100[b] += 1
+    for row in janela_50:
+        bolas = {row[f'b{j}'] for j in range(1, 16)}
+        for b in bolas: f_50[b] += 1
+    for row in janela_20:
+        bolas = {row[f'b{j}'] for j in range(1, 16)}
+        for b in bolas: f_20[b] += 1
+        
+    atraso_count = {d: 0 for d in range(1, 26)}
+    for d in range(1, 26):
+        atraso = 0
+        for row in historico:
+            bolas = {row[f'b{j}'] for j in range(1, 16)}
+            if d in bolas:
+                break
+            atraso += 1
+        atraso_count[d] = atraso
+        
+    max_atraso = max(atraso_count.values()) if atraso_count else 1
+    if max_atraso == 0: max_atraso = 1
+    
+    features_list = []
+    for dezena in range(1, 26):
+        atraso_norm = atraso_count[dezena] / max_atraso
+        f_20_rel = f_20[dezena] / 20.0
+        f_100_rel = f_100[dezena] / 100.0
+        momentum = f_20_rel - f_100_rel
+        
+        features_list.append({
+            'dezena': dezena,
+            'freq_20': f_20[dezena],
+            'freq_50': f_50[dezena],
+            'freq_100': f_100[dezena],
+            'freq_200': f_200[dezena],
+            'freq_total': f_total[dezena],
+            'atraso_norm': atraso_norm,
+            'momentum': momentum,
+            'sazonalidade': sazonalidade
+        })
+        
+    return pd.DataFrame(features_list)
 
-def calcular_momentum(historico):
-    historico_recente = historico[:25]
-    freq_5 = {i: 0 for i in range(1, 26)}
-    freq_25 = {i: 0 for i in range(1, 26)}
-    
-    for idx, row in enumerate(historico_recente):
-        bolas = [row[f'b{i}'] for i in range(1, 16)]
-        for b in bolas:
-            freq_25[b] += 1
-            if idx < 5:
-                freq_5[b] += 1
-                
-    scores_momentum = {}
-    for i in range(1, 26):
-        esperado_5 = (freq_25[i] / 25) * 5 if freq_25[i] > 0 else 0
-        real_5 = freq_5[i]
-        diff = real_5 - esperado_5
-        
-        # Modifier: -1.0 to +1.0 roughly
-        modifier = 1.0 + (diff * 0.10)
-        scores_momentum[i] = max(0.5, min(1.5, modifier))
-        
-    return scores_momentum
-
-def calcular_scores_hibridos(historico):
-    scores_estatisticos, freq_20, freq_100 = calcular_pesos_estatisticos(historico)
-    atrasos = calcular_atrasos(historico)
-    max_score = max(scores_estatisticos.values()) if scores_estatisticos else 1
-    
-    # V7: Momentum and Seasonality
-    scores_sazonais = calcular_score_sazonal(historico)
-    scores_momentum = calcular_momentum(historico)
-    
-    # ----------------------------------------------------
-    # V6: Captura dos Verdadeiros Atrasos (Risco de Quebra)
-    # ----------------------------------------------------
-    stats = stats_historicas.run_historico()
-    risco_map = {}
-    if stats.get('status') == 'success':
-        for item in stats['atrasos']:
-            risco_map[item['dezena']] = item['risco_quebra']
+def calcular_scores_hibridos(historico, dia_alvo=None):
+    df_features = calcular_features_concurso_atual(historico)
     
     model_path = os.path.join(os.path.dirname(__file__), 'rf_model.pkl')
     usa_ml = False
+    scores_finais = {i: 1.0 for i in range(1, 26)}
     
-    if os.path.exists(model_path):
+    if df_features is not None and os.path.exists(model_path):
         try:
             rf = joblib.load(model_path)
-            dados_atuais = []
+            # Ordena as features exatamente como no treino
+            cols = ['dezena', 'freq_20', 'freq_50', 'freq_100', 'freq_200', 'freq_total', 'atraso_norm', 'momentum', 'sazonalidade']
+            X_pred = df_features[cols]
+            probas = rf.predict_proba(X_pred)
+            
+            prob_bruta = {i: probas[i-1][1] for i in range(1, 26)}
+            soma_probas = sum(prob_bruta.values())
+            
+            # Normalização para a soma ser 15
             for i in range(1, 26):
-                dados_atuais.append({
-                    'dezena': i,
-                    'freq_20': freq_20[i],
-                    'freq_100': freq_100[i],
-                    'atraso': atrasos[i]
-                })
-            df_atual = pd.DataFrame(dados_atuais)
-            probas = rf.predict_proba(df_atual)
+                scores_finais[i] = (prob_bruta[i] / soma_probas) * 15.0
+            
             usa_ml = True
-        except:
+        except Exception as e:
+            print("Erro ao prever ML:", e)
             usa_ml = False
-
-    scores_finais = {}
-    for i in range(1, 26):
-        score_estat = scores_estatisticos[i] / max_score
-        if usa_ml:
-            prob_ml = probas[i-1][1]
-            hibrido = (prob_ml * 0.70) + (score_estat * 0.30)
-            base_score = hibrido * 100
-        else:
-            base_score = score_estat * 100
             
-        # Aplica Sazonalidade e Momentum (V7)
-        base_score = base_score * scores_sazonais[i] * scores_momentum[i]
-            
-        # V6: Super Multiplicador de Risco Extremo (+50%)
-        if risco_map.get(i, False):
-            base_score *= 1.50
-            
-        scores_finais[i] = base_score
+    if not usa_ml:
+        # Fallback ultra básico se falhar
+        for i in range(1, 26):
+            scores_finais[i] = 15.0 / 25.0
             
     return scores_finais, usa_ml
 
-def obter_top_pares_sinergia():
+def otimizar_base(scores, ultimo_resultado, tamanho_base):
+    # Algoritmo Guloso (Otimização da Base)
+    # Maximizar soma de scores respeitando R_max
+    
+    R_max = 11 if tamanho_base == 18 else (12 if tamanho_base == 19 else 13)
+    
+    dezenas_ordenadas = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    base_selecionada = []
+    repetidas = 0
+    
+    for dez, score in dezenas_ordenadas:
+        if len(base_selecionada) >= tamanho_base:
+            break
+            
+        if dez in ultimo_resultado:
+            if repetidas < R_max:
+                base_selecionada.append(dez)
+                repetidas += 1
+        else:
+            base_selecionada.append(dez)
+            
+    # Completa se não atingir o tamanho por restrição muito forte
+    if len(base_selecionada) < tamanho_base:
+        for dez, score in dezenas_ordenadas:
+            if dez not in base_selecionada:
+                base_selecionada.append(dez)
+            if len(base_selecionada) >= tamanho_base:
+                break
+                
+    return sorted(base_selecionada)
+
+import numpy as np
+
+def carregar_afinidades_duplas():
     try:
-        dados_corr = correlacao.calcular_correlacao_e_alertas()
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT dez_1, dez_2, afinidade FROM estatisticas_duplas WHERE janela = 'all'")
+            rows = cur.fetchall()
+        conn.close()
+        return {(r['dez_1'], r['dez_2']): r['afinidade'] for r in rows}
+    except:
+        return {}
+
+def score_afinidade_bilhete(jogo, af_dict):
+    if not af_dict: return 1.0
+    score = 0
+    pares = 0
+    for combo in itertools.combinations(sorted(jogo), 2):
+        if combo in af_dict:
+            score += af_dict[combo]
+            pares += 1
+    return score / pares if pares > 0 else 1.0
+
+def aplicar_filtro_zscore(jogos, historico, limite_top_pct=0.5):
+    # Calcula estatísticas dos últimos 100 sorteios
+    N = min(100, len(historico))
+    if N < 10:
+        return jogos # Sem histórico suficiente
+        
+    somas, pares, primos, molduras = [], [], [], []
+    
+    primos_base = {2, 3, 5, 7, 11, 13, 17, 19, 23}
+    moldura_base = {1,2,3,4,5,6,10,11,15,16,20,21,22,23,24,25}
+    
+    for row in historico[:N]:
+        b = [row[f'b{j}'] for j in range(1, 16)]
+        somas.append(sum(b))
+        pares.append(sum(1 for x in b if x % 2 == 0))
+        primos.append(sum(1 for x in b if x in primos_base))
+        molduras.append(sum(1 for x in b if x in moldura_base))
+        
+    mu_S, std_S = np.mean(somas), np.std(somas) or 1
+    mu_P, std_P = np.mean(pares), np.std(pares) or 1
+    mu_Q, std_Q = np.mean(primos), np.std(primos) or 1
+    mu_M, std_M = np.mean(molduras), np.std(molduras) or 1
+    
+    af_dict = carregar_afinidades_duplas()
+    bilhetes_com_score = []
+    
+    for jogo in jogos:
+        S_b = sum(jogo)
+        P_b = sum(1 for x in jogo if x % 2 == 0)
+        Q_b = sum(1 for x in jogo if x in primos_base)
+        M_b = sum(1 for x in jogo if x in moldura_base)
+        
+        z_S = abs(S_b - mu_S) / std_S
+        z_P = abs(P_b - mu_P) / std_P
+        z_Q = abs(Q_b - mu_Q) / std_Q
+        z_M = abs(M_b - mu_M) / std_M
+        
+        af_jogo = score_afinidade_bilhete(jogo, af_dict)
+        
+        # Afinidade > 1.0 é boa, z-scores menores são melhores
+        # Multiplicamos a afinidade por 2.0 para dar peso semelhante às variáveis z-score
+        coerencia = -(z_S + z_P + z_Q + z_M) + (af_jogo * 3.0)
+        
+        bilhetes_com_score.append((coerencia, jogo))
+        
+    bilhetes_com_score.sort(key=lambda x: x[0], reverse=True)
+    
+    # Manter apenas top %
+    corte = int(len(bilhetes_com_score) * limite_top_pct)
+    if corte < 1: corte = 1
+    
+    melhores_jogos = [x[1] for x in bilhetes_com_score[:corte]]
+    return melhores_jogos
+
+def obter_top_pares_sinergia(historico=None):
+    try:
+        dados_corr = correlacao.calcular_correlacao_e_alertas(historico)
         if dados_corr.get('status') == 'success':
             return dados_corr.get('top_pares', [])
     except:
@@ -269,8 +336,8 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                 
             scores, usado_ml = calcular_scores_hibridos(historico)
             
-            # V7: Top Pares Sinergia
-            top_pares = obter_top_pares_sinergia()
+            # Substituindo V7 Top Pares pela Afinidade Global Matemática
+            af_dict = carregar_afinidades_duplas()
             
             dezenas_ordenadas = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             
@@ -288,8 +355,8 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                 if e_jogo_perfeito_dinamico(jogo, perfil, ultimo_resultado):
                     score_jogo = sum(scores[b] for b in jogo) / tamanho
                     
-                    # Aplica Bônus de Sinergia (V7)
-                    bonus_sinergia = avaliar_sinergia_jogo(jogo, top_pares) * 0.5 
+                    # Aplica Bônus de Afinidade Média
+                    bonus_sinergia = score_afinidade_bilhete(jogo, af_dict) * 0.5 
                     
                     eficiencia = min(99.9, max(95.0, score_jogo + bonus_sinergia + random.uniform(0, 1)))
                     
@@ -308,7 +375,7 @@ def gerar_sugestoes(qtd=3, tamanho=15):
                     ja_existe = any(s['dezenas'] == jogo for s in sugestoes)
                     if not ja_existe:
                         score_jogo = sum(scores[b] for b in jogo) / tamanho
-                        bonus_sinergia = avaliar_sinergia_jogo(jogo, top_pares) * 0.5
+                        bonus_sinergia = score_afinidade_bilhete(jogo, af_dict) * 0.5
                         eficiencia = min(99.9, max(90.0, score_jogo + bonus_sinergia + random.uniform(-1, 0.5)))
                         sugestoes.append({"dezenas": jogo, "eficiencia": round(eficiencia, 2)})
                     if len(sugestoes) >= qtd:

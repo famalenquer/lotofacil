@@ -10,12 +10,32 @@ def get_db_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-def run_historico():
+def run_historico(historico_data=None):
+    if historico_data is not None:
+        # Se for injetado de fora (ex: engine_preditivo rodando no modo simulação do diagnóstico),
+        # verifica se precisa inverter para ASCendente
+        if len(historico_data) > 1 and historico_data[0]['concurso'] > historico_data[-1]['concurso']:
+            historico = list(reversed(historico_data))
+        else:
+            historico = historico_data
+        
+        # Pula a conexão
+        return _process_historico(historico)
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM concursos ORDER BY concurso ASC")
             historico = cursor.fetchall()
+            return _process_historico(historico)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        if conn:
+            conn.close()
+
+def _process_historico(historico):
+    try:
             
             # Arrays para atraso
             ultimo_visto = {i: 0 for i in range(1, 26)}
@@ -91,8 +111,6 @@ def run_historico():
             
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     print(json.dumps(run_historico()))

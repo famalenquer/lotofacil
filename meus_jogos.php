@@ -72,6 +72,9 @@
                     $fixas = json_decode($jogo['dezenas_fixas'], true) ?: [];
                     $base = json_decode($jogo['dezenas_base'], true) ?: [];
                     
+                    sort($fixas);
+                    sort($base);
+                    
                     echo "<div class='jogo-card' id='jogo-{$jogo['id']}'>";
                     
                     echo "<div class='jogo-header'>";
@@ -116,7 +119,11 @@
                     echo "</div>";
                     
                     echo "<div style='margin-top: 15px;'>";
-                    echo "<button class='btn' onclick='analisarJogo({$jogo['id']})' style='background: var(--primary); padding: 8px 15px; border-radius: 5px;'>📊 Conferir Resultado (Último Sorteio)</button>";
+                    if (!empty($jogo['concurso_alvo'])) {
+                        echo "<button class='btn' onclick='analisarJogo({$jogo['id']}, true)' style='background: #10b981; padding: 8px 15px; border-radius: 5px;'>✅ Ver Resultado Salvo (Conc. {$jogo['concurso_alvo']})</button>";
+                    } else {
+                        echo "<button class='btn' onclick='analisarJogo({$jogo['id']}, false)' style='background: var(--primary); padding: 8px 15px; border-radius: 5px;'>📊 Conferir Resultado (Último Sorteio)</button>";
+                    }
                     echo "</div>";
                     
                     echo "<div class='analise-box' id='analise-{$jogo['id']}'></div>";

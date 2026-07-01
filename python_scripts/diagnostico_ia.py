@@ -32,6 +32,10 @@ def gerar_diagnostico(payload_json):
             with conn.cursor() as cursor:
                 cursor.execute("SELECT * FROM concursos WHERE concurso < %s ORDER BY concurso DESC", (concurso_alvo,))
                 historico = cursor.fetchall()
+                
+                cursor.execute("SELECT data_sorteio FROM concursos WHERE concurso = %s", (concurso_alvo,))
+                sorteio_alvo = cursor.fetchone()
+                dia_alvo = sorteio_alvo['data_sorteio'].weekday() if sorteio_alvo and sorteio_alvo.get('data_sorteio') else None
         finally:
             conn.close()
             
@@ -117,29 +121,51 @@ def gerar_diagnostico(payload_json):
             
         # Análise de Comportamento (Motor V7)
         if historico:
-            scores_v7, _ = engine_preditivo.calcular_scores_hibridos(historico)
+            scores_v7, _ = engine_preditivo.calcular_scores_hibridos(historico, dia_alvo)
             
+            # Recuperar dezenas do concurso anterior ao alvo para saber o que era "repetida"
+            ultimo_sorteio_antes_do_alvo = {historico[0][f'b{i}'] for i in range(1, 16)}
+
             # Dezenas Quentes que ele ignorou
             dezenas_quentes = sorted(scores_v7.items(), key=lambda x: x[1], reverse=True)[:10]
             quentes_ignoradas = [d[0] for d in dezenas_quentes if d[0] not in base and d[0] in sorteadas]
             
             if quentes_ignoradas:
-                diagnosticos.append({
-                    "tipo": "info",
-                    "titulo": "Tendência (Momentum) Ignorada",
-                    "mensagem": f"Você deixou de fora dezenas fortíssimas como {', '.join(map(lambda x: str(x).zfill(2), quentes_ignoradas))}. O Motor V7 apontava essas dezenas com alto Momentum ou forte Sazonalidade."
-                })
+                quentes_repetidas_ignoradas = [d for d in quentes_ignoradas if d in ultimo_sorteio_antes_do_alvo]
+                quentes_ausentes_ignoradas = [d for d in quentes_ignoradas if d not in ultimo_sorteio_antes_do_alvo]
+                
+                if ("diamante" in estrategia or "normal" in estrategia or "econômico" in estrategia) and quentes_repetidas_ignoradas:
+                    diagnosticos.append({
+                        "tipo": "success",
+                        "titulo": "Filtro de Repetidas Aplicado com Sucesso",
+                        "mensagem": f"O sistema excluiu propositalmente as dezenas quentes ({', '.join(map(lambda x: str(x).zfill(2), quentes_repetidas_ignoradas))}) para não estourar o limite matemático de repetidas do concurso anterior. Ótima decisão algorítmica."
+                    })
+                
+                if quentes_ausentes_ignoradas or (not quentes_repetidas_ignoradas):
+                    if not quentes_ausentes_ignoradas: quentes_ausentes_ignoradas = quentes_ignoradas
+                    diagnosticos.append({
+                        "tipo": "info",
+                        "titulo": "Tendência (Momentum) Ignorada",
+                        "mensagem": f"O fechamento deixou de fora dezenas fortíssimas como {', '.join(map(lambda x: str(x).zfill(2), quentes_ausentes_ignoradas))}. O Motor V7 apontava essas dezenas com alto Momentum."
+                    })
                 
             # Dezenas Frias que ele insistiu
             dezenas_frias = sorted(scores_v7.items(), key=lambda x: x[1])[:10]
             frias_escolhidas = [d[0] for d in dezenas_frias if d[0] in base and d[0] not in sorteadas]
             
             if frias_escolhidas:
-                diagnosticos.append({
-                    "tipo": "info",
-                    "titulo": "Insistência em Dezenas Frias",
-                    "mensagem": f"Você escolheu dezenas como {', '.join(map(lambda x: str(x).zfill(2), frias_escolhidas))} que não saíram. O Motor V7 já apontava que elas estavam congelando no curto prazo."
-                })
+                if len(base) >= 19:
+                    diagnosticos.append({
+                        "tipo": "info",
+                        "titulo": "Dezenas Frias Necessárias",
+                        "mensagem": f"Para montar uma base gigante de {len(base)} dezenas (cobrindo 80% do volante), o algoritmo precisou aceitar algumas dezenas frias ({', '.join(map(lambda x: str(x).zfill(2), frias_escolhidas))}). Isso é um sacrifício matemático padrão das estratégias agressivas."
+                    })
+                else:
+                    diagnosticos.append({
+                        "tipo": "info",
+                        "titulo": "Insistência em Dezenas Frias",
+                        "mensagem": f"Sua base contou com dezenas como {', '.join(map(lambda x: str(x).zfill(2), frias_escolhidas))} que não saíram. O Motor V7 já apontava que elas estavam congelando."
+                    })
 
         return {
             "status": "success",
